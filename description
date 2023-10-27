@@ -1,0 +1,11 @@
+Package: Solar
+Type: Package
+Title: Solar: An R package for calculating sun positon
+Version: 0.0.1
+Author: Thomas Kelly <tbkelly@alaska.edu> and Laura Whitmore <lmwhitmore@alaska.edu>
+  Maintainer: Thomas Kelly <tbkelly@alaska.edu> and Laura Whitmore <lmwhitmore@alaska.edu> 
+  Description: 
+License: MIT Licence
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.2.3
