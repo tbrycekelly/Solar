@@ -5,7 +5,7 @@ calcSun(datetime = Sys.time() + 8*3600)
 
 dailySolar = function(x) {
   time = seq(x, x + 86400, by = 300)
-  insolation = calcSun(datetime = time)$insolation
+  insolation = calcSun(datetime = time, lon = -72.3, lat = 42.7)$insolation
   mean(insolation, na.rm = T)
 }
 
@@ -40,14 +40,85 @@ plot(insolation$solar/get.solar(Sys.time()), a(insolation$solar),
      type= 'l',
      lwd = 3, yaxs = 'i', xaxs = 'i', xlim = c(0, 3))
 
-grid = expand.grid(lon = -147.8,
-                   lat = 64.8,
-                   datetime = seq(make.time(2022, 04, 01), make.time(2022,4,2), by = 60))
 
 
-grid = calc.solar(grid$lon, grid$lat, tz = -10, datetime = grid$datetime)
+grid = grid[grid$insolation > 0.1, ]
 
 sum(grid$insolation)
+
+library(SimpleGridder)
+
+
+gridCount = function(tree, z, gx, gy, neighborhood = 25, weight.func = function(x) {x < 1}) {
+  
+  grid = data.frame(x = gx, y = gy)
+  tmp = tree$query(grid, neighborhood)
+  
+  grid$z = NA
+  
+  for (i in 1:nrow(grid)) {
+    w = weight.func(tmp$nn.dist[i,])
+    grid$z[i] = sum(w)
+  }
+  
+  grid
+}
+
+
+
+grid = expand.grid(lon = -72.3,
+                   lat = 42.7,
+                   datetime = seq(as.POSIXct('2022-01-01'), as.POSIXct('2023-12-31'), by = 60*10))
+
+
+grid = calcSun(lon = grid$lon, lat = grid$lat, datetime = grid$datetime)
+
+grid$insolation = grid$insolation * cos(pi / 180 * (30 - grid$solar.elevation)) * cos(pi / 180 * (180 - grid$solar.azimuth))
+grid = grid[grid$insolation > 0.1, ]
+
+#### Calculate location in the sky (i.e. count)
+product = SimpleGridder::buildGrid(xlim = c(0, 360), ylim = c(0, 90), nx = 60, ny = 20, x.factor = 1, y.factor = 1)
+product = SimpleGridder::setGridder(product, gridder = gridCount, neighborhood = 400)
+product = SimpleGridder::appendData(product,
+                                    x = grid$solar.azimuth,
+                                    y = grid$solar.elevation,
+                                    z = grid$insolation,
+                                    label = 'insolation')
+product = SimpleGridder::interpData(product)
+
+
+zlim = c(0, max(pretty(product$interp$insolation)))
+zlim = c(0, 5000)
+SimpleGridder::plotGrid(product, 'insolation', pal = pals::inferno(8), zlim = zlim)
+mtext(paste(zlim, collapse = ' -> '))
+
+
+#### Calculate insolation in the sky (i.e. count)
+light = SimpleGridder::buildGrid(xlim = c(0, 360), ylim = c(0, 90), nx = 60, ny = 20, x.factor = 1, y.factor = 1)
+light = SimpleGridder::setGridder(light, gridder = gridWeighted, neighborhood = 100)
+light = SimpleGridder::appendData(light,
+                                    x = grid$solar.azimuth,
+                                    y = grid$solar.elevation,
+                                    z = grid$insolation,
+                                    label = 'insolation')
+light = SimpleGridder::interpData(light)
+
+
+zlim = c(0, max(pretty(light$interp$insolation)))
+SimpleGridder::plotGrid(light, 'insolation', pal = pals::inferno(8), zlim = zlim)
+mtext(paste(zlim, collapse = ' -> '))
+
+light$interp$light = light$interp$insolation * product$interp$insolation
+zlim = c(0, max(pretty(light$interp$light)))
+zlim = c(0, 250 * 60/2)
+SimpleGridder::plotGrid(light, 'light', pal = pals::inferno(8), zlim = zlim)
+mtext(paste(zlim, collapse = ' -> '))
+
+
+
+
+
+
 
 section = build.section(grid$solar.azimuth%%360, grid$solar.elevation, grid$insolation, gridder = gridBin, ylim = c(0, 90))
 section.count = build.section(grid$solar.azimuth%%360, grid$solar.elevation, grid$insolation, gridder = gridCount, ylim = c(0, 90))
