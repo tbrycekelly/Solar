@@ -2,7 +2,8 @@
 #' @export
 calcSun = function(lon = -147.8,
                    lat = 64.8,
-                   datetime = Sys.time()) {
+                   datetime = Sys.time(),
+                   tz = -8) {
   
   if (length(lon) == 1) {
     lon = rep(lon, length(datetime))
@@ -34,20 +35,22 @@ calcSun = function(lon = -147.8,
   
   y = tan(obl.correction / 2 * pi / 180)^2
   
-  eq.time.min = 4 * 180 / pi * ( y * sin(2 * geom.mean.long.sun * pi / 180) -
+  eq.time.min = y * sin(2 * geom.mean.long.sun * pi / 180) -
                                    2 * eccentric.earth * sin(geom.mean.anom.sun * pi / 180) +
                                    4 * eccentric.earth * y * sin(geom.mean.anom.sun * pi / 180) * cos(2 * geom.mean.long.sun * pi / 180) -
                                    0.5 * y^2 * sin(4 * geom.mean.long.sun * pi / 180) -
-                                   1.25 * eccentric.earth^2 * sin(geom.mean.anom.sun * pi / 180))
+                                   1.25 * eccentric.earth^2 * sin(2 * geom.mean.anom.sun * pi / 180)
+  eq.time.min = 4 * 180 / pi * eq.time.min
+  
   HA.sunrise = 180 / pi * acos(cos(90.833 * pi / 180) / cos(lat * pi / 180) / cos(pi / 180 * sun.dec) - tan(lat * pi / 180) * tan(sun.dec * pi / 180))
   
-  solar.noon = (720 - 4 * lon - eq.time.min) / 1440
-  sunrise = solar.noon - HA.sunrise * 4 / 1440
-  sunset = solar.noon + HA.sunrise * 4 / 1440
+  solar.noon = (720 - 4 * lon - eq.time.min + tz * 60) / 1440 # local
+  sunrise = solar.noon - HA.sunrise * 4 / 1440 # local
+  sunset = solar.noon + HA.sunrise * 4 / 1440 # local
   
   sunlight.durration = 8 * HA.sunrise
   
-  true.solar.time = ((jules$day - floor(jules$day)) * 1440 + eq.time.min + 4 * lon) %% 1440
+  true.solar.time = ((as.numeric(format(datetime, '%H')) + as.numeric(format(datetime, '%M'))/60)/24 * 1440 + eq.time.min + 4 * lon - tz * 60) %% 1440
   
   hour.angle = rep(0, length(datetime))
   
@@ -86,7 +89,7 @@ calcSun = function(lon = -147.8,
   
   data.frame(lon = lon,
              lat = lat,
-             datetime = datetime,
+             datetime = format(datetime, usetz = T),
              jules.day = jules$day,
              julest.century = jules$century,
              solar.elevation = solar.elevation,
@@ -95,6 +98,11 @@ calcSun = function(lon = -147.8,
              solar.hour = hour.angle,
              solar.zenith = solar.zenith,
              solar.azimuth = solar.azimuth,
+             solarNoon = solar.noon,
+             sunrise = sunrise,
+             sunset = sunset,
+             solarTime = true.solar.time,
+             eqTime = eq.time.min,
              refraction = refraction,
              insolation = ID)
 }
