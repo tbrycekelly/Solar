@@ -42,11 +42,13 @@ calcSun = function(lon = -147.8,
                                    1.25 * eccentric.earth^2 * sin(2 * geom.mean.anom.sun * pi / 180)
   eq.time.min = 4 * 180 / pi * eq.time.min
   
-  HA.sunrise = 180 / pi * acos(cos(90.833 * pi / 180) / cos(lat * pi / 180) / cos(pi / 180 * sun.dec) - tan(lat * pi / 180) * tan(sun.dec * pi / 180))
+  tmp = cos(90.833 * pi / 180) / cos(lat * pi / 180) / cos(pi / 180 * sun.dec) - tan(lat * pi / 180) * tan(sun.dec * pi / 180)
+  HA.sunrise = 180 / pi * acos(pmin(1, pmax(-1, tmp)))
   
-  solar.noon = (720 - 4 * lon - eq.time.min + tz * 60) / 1440 # local
-  sunrise = solar.noon - HA.sunrise * 4 / 1440 # local
-  sunset = solar.noon + HA.sunrise * 4 / 1440 # local
+  #solar.noon = (720 - 4 * lon - eq.time.min + tz * 60) / 1440 # local
+  solar.noon = (720 - 4 * lon - eq.time.min) / 1440 # UTC
+  sunrise = solar.noon - HA.sunrise * 4 / 1440
+  sunset = solar.noon + HA.sunrise * 4 / 1440
   
   sunlight.durration = 8 * HA.sunrise
   
@@ -58,7 +60,8 @@ calcSun = function(lon = -147.8,
   hour.angle[k] = 180 + true.solar.time[k]/4
   hour.angle[!k] = true.solar.time[!k]/4 - 180
   
-  solar.zenith = 180 / pi * acos(sin(pi / 180 * lat) * sin(pi / 180 * sun.dec) + cos(lat * pi / 180) * cos(sun.dec * pi / 180) * cos(hour.angle * pi / 180))
+  tmp = sin(pi / 180 * lat) * sin(pi / 180 * sun.dec) + cos(lat * pi / 180) * cos(sun.dec * pi / 180) * cos(hour.angle * pi / 180)
+  solar.zenith = 180 / pi * acos(pmin(1,pmax(-1,tmp)))
   solar.elevation = 90 - solar.zenith
   
   ## Calculate atmospheric refraction and attenuation
@@ -79,8 +82,10 @@ calcSun = function(lon = -147.8,
   
   solar.azimuth = rep(0, length(datetime))
   k = hour.angle > 0
-  solar.azimuth[k] = (180 / pi * acos((sin(lat[k] * pi / 180) * cos(solar.zenith[k] * pi / 180) - sin(sun.dec[k] * pi / 180)) / (cos(lat[k] * pi / 180) * sin(solar.zenith[k] * pi / 180)))) + 180 %% 360
-  solar.azimuth[!k] = (540 - 180 / pi * acos((sin(lat[!k] * pi / 180) * cos(solar.zenith[!k] * pi / 180) - sin(sun.dec[!k] * pi / 180)) / (cos(lat[!k] * pi / 180) * sin(solar.zenith[!k] * pi / 180)))) %% 360
+  tmp = pmax(-1,pmin(1,(sin(lat[k] * pi / 180) * cos(solar.zenith[k] * pi / 180) - sin(sun.dec[k] * pi / 180)) / (cos(lat[k] * pi / 180) * sin(solar.zenith[k] * pi / 180))))
+  solar.azimuth[k] = (180 / pi * acos(tmp)) + 180 %% 360
+  tmp = pmin(1, pmax(-1,(sin(lat[!k] * pi / 180) * cos(solar.zenith[!k] * pi / 180) - sin(sun.dec[!k] * pi / 180)) / (cos(lat[!k] * pi / 180) * sin(solar.zenith[!k] * pi / 180))))
+  solar.azimuth[!k] = (540 - 180 / pi * acos(tmp)) %% 360
   
   AM = 1 / cos((90 - solar.elevation.true) * pi / 180)
   AM[is.na(AM)] = 0
