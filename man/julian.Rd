@@ -4,7 +4,7 @@
 \alias{julian}
 \title{Julian Day definition}
 \usage{
-julian(datetime, tz = 0)
+julian(datetime)
 }
 \description{
 Julian Day definition

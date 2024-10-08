@@ -2,8 +2,8 @@
 #' @export
 calcSun = function(lon = -147.8,
                    lat = 64.8,
-                   datetime = Sys.time(),
-                   tz = -8) {
+                   datetime = Sys.time()
+                   ) {
   
   if (length(lon) == 1) {
     lon = rep(lon, length(datetime))
@@ -92,22 +92,19 @@ calcSun = function(lon = -147.8,
   ID = 1.353 * 0.7 ^ (AM^0.678)
   ID[is.na(ID)] = 0
   
-  data.frame(lon = lon,
-             lat = lat,
+  data.frame(lonitude = lon,
+             latitude = lat,
              datetime = format(datetime, usetz = T),
-             jules.day = jules$day,
-             julest.century = jules$century,
-             solar.elevation = solar.elevation,
-             solar.elevation.apparent = solar.elevation.true,
-             solar.dec = sun.dec,
-             solar.hour = hour.angle,
-             solar.zenith = solar.zenith,
-             solar.azimuth = solar.azimuth,
+             julesDay = jules$day,
+             julestCentury = jules$century,
              solarNoon = solar.noon,
              sunrise = sunrise,
              sunset = sunset,
-             solarTime = true.solar.time,
-             eqTime = eq.time.min,
-             refraction = refraction,
+             solarHour = hour.angle,
+             solarZenithDeg = solar.zenith,
+             solarAzimuthDeg = solar.azimuth,
+             solarElevationDeg = solar.elevation,
+             solarElevationApparentDeg = solar.elevation.true,
+             refractionDeg = refraction,
              insolation = ID)
 }
