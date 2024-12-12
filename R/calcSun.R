@@ -51,7 +51,7 @@ calcSun = function(lon = -147.8,
   sunset = solar.noon + HA.sunrise * 4 / 1440
   
   sunlight.durration = 8 * HA.sunrise
-  
+  tz = 0
   true.solar.time = ((as.numeric(format(datetime, '%H')) + as.numeric(format(datetime, '%M'))/60)/24 * 1440 + eq.time.min + 4 * lon - tz * 60) %% 1440
   
   hour.angle = rep(0, length(datetime))
